@@ -1,61 +1,49 @@
-import random
-from hermetrics.levenshtein import Levenshtein
-lev = Levenshtein()
+import os
+from datetime import datetime, timedelta
+from typing import Union, Any
+from jose import jwt
 
 
-def pwd_str(pwd, char_dict, g):
-    i = 0
-    str_pass = ""
-    while len(pwd[i: i+g]) == g:
-        char = pwd[i: i+g]
-        try: 
-            char_cho = random.choice(char_dict[char])
-            jump = len(char)
-        except: 
-            char_cho = char
-            jump = len(char_cho)
-        
-        str_pass = str_pass + char_cho
-        i+=jump
-    
-    str_pass = str_pass + pwd[i: i+g]
-    str_pass = str_pass.replace(" ", "")
-    return str_pass
+from passlib.context import CryptContext
+
+
+# importa las variables de entorno del archivo settings.py
+from app.src.settings import (
+    ACCESS_TOKEN_EXPIRE_MINUTES, 
+    REFRESH_TOKEN_EXPIRE_MINUTES, 
+    ALGORITHM, 
+    JWT_SECRET_KEY, 
+    JWT_REFRESH_SECRET_KEY)
+
+password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 
-def gen_password(pwd, char_dict, g, lim = 3):
-    if g <= lim:
-        new_pass = gen_password(
-            pwd_str(pwd, char_dict, g + 1),
-            char_dict,
-            g + 1
-        )
-        return new_pass
+def get_hashed_password(password: str) -> str:
+    return password_context.hash(password)
+
+
+def verify_password(password: str, hashed_pass: str) -> bool:
+    return password_context.verify(password, hashed_pass)
+
+
+
+def create_access_token(subject: Union[str, Any], expires_delta: int = None) -> str:
+    if expires_delta is not None:
+        expires_delta = datetime.utcnow() + timedelta(seconds=int(expires_delta))
     else:
-        return pwd
+        expires_delta = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    
+    to_encode = {"exp": int(expires_delta.timestamp()), "sub": str(subject)}
+    encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, ALGORITHM)
+    return encoded_jwt
 
-
-def middle(n):
-    return n[-1]
-
-def sort(list_of_tuples):
-    return sorted(list_of_tuples, key = middle)
-
-
-
-def get_pass_groups(results, pwd):
-    results = list(dict.fromkeys(results))
-
-    suggestions = []
-
-    for sug_pass in results:
-        data_point = (sug_pass, lev.similarity(pwd, sug_pass))
-
-        suggestions.append(data_point)
-
-    suggestions = sort(suggestions)[:3]
-
-    return suggestions
-
-
+def create_refresh_token(subject: Union[str, Any], expires_delta: int = None) -> str:
+    if expires_delta is not None:
+        expires_delta = datetime.utcnow() + expires_delta
+    else:
+        expires_delta = datetime.utcnow() + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
+    
+    to_encode = {"exp": expires_delta, "sub": str(subject)}
+    encoded_jwt = jwt.encode(to_encode, JWT_REFRESH_SECRET_KEY, ALGORITHM)
+    return encoded_jwt

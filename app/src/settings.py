@@ -1,16 +1,18 @@
-char_dict = {
-    "a": ["a", "4", "@"],
-    "e": ["e", "3"],
-    "i": ["i", "!", "¡"],
-    "o": ["o", "0"],
-    "u": ["u"],
-    "te": ["T"],
-    "se": ["C"],
-    "ve": ["B"],
-    "be": ["B"],
-    "de": ["D"],
-    "tres": ["3"],
-    "dos": ["2"],
-    "cien": ["100"],
-    "sien": ["100"]
-}
+import os
+from dotenv import load_dotenv
+from pathlib import Path
+
+from MySQLdb import _mysql
+
+
+dotenv_path = Path('./config/prod.env')
+load_dotenv(dotenv_path=dotenv_path)
+
+ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+REFRESH_TOKEN_EXPIRE_MINUTES = os.getenv("REFRESH_TOKEN_EXPIRE_MINUTES")
+ALGORITHM = os.getenv("ALGORITHM")
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+JWT_REFRESH_SECRET_KEY = os.getenv("JWT_REFRESH_SECRET_KEY")
+
+
+

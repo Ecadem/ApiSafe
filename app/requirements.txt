@@ -8,3 +8,4 @@ hermetrics==0.1.13
 python-jose[cryptography]
 passlib[bcrypt] 
 python-multipart
+ipython

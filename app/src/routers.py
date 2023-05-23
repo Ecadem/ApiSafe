@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-from fastapi import APIRouter
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, status, HTTPException, Depends 
+from fastapi.responses import HTMLResponse, RedirectResponse 
+from fastapi.security import OAuth2PasswordRequestForm
 
 import os
 import json
@@ -11,13 +12,11 @@ from .models import (
 
 
 from .dependencies import (
-    gen_password,
-    get_pass_groups,
+    get_hashed_password,
+
 )
 
-from .settings import (
-    char_dict
-)
+# from .settings import ()
 
 router = APIRouter()
 
@@ -196,10 +195,19 @@ def root():
    """
 
 
-@router.post("/generate_pass", summary="Se encarga de generar una contraseña con un nivel mas de seguridad apartir de una frase", tags=['Generador Contraseñas'] )
-def generate_pass(pwd: str):
-
-    results = [ gen_password(pwd, char_dict, 0) for _ in range(1000) ] 
-    response = get_pass_groups(results, pwd) 
-
-    return {"data": response}
+@router.post('/signup', summary="Create new user")
+async def create_user(data: UserAuth):
+    # querying database to check if user already exist
+    user = db.get(data.email, None)
+    if user is not None:
+            raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this email already exist"
+        )
+    user = {
+        'email': data.email,
+        'password': get_hashed_password(data.password),
+        'id': str(uuid4())
+    }
+    db[data.email] = user    # saving user to database
+    return user
